@@ -41,7 +41,8 @@ type Host struct {
 	CPUAllocated NullNumber 	`json:"cpuallocated"`
 	CPUNumber NullNumber 	`json:"cpunumber"`
 	CPUSockerts NullNumber 	`json:"cpusockets"`
-	CPUSpeed NullNumber 		`json:"cpuspeed"`
+	CPUSpeed		NullNumber	`json:"cpuspeed"`
+	CPUUsed		NullNumber	`json:"cpuused"`
 	CPUWithoverProvisioning NullNumber `json:"cpuwithoverprovisioning"`
 	Created NullString 		`json:"created"`
 	Details NullString 		`json:"details"`
@@ -80,7 +81,7 @@ type Host struct {
 	Jobstatus NullString `json:"jobstatus"`
 }
 
-func NewListHost() (p *ListHostParameter) {
+func NewListHostParam() (p *ListHostParameter) {
 	p = new(ListHostParameter)
 	return p
 }
