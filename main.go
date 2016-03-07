@@ -5,8 +5,8 @@ import (
 	cloudstack "collectd-cloudstack/golang-cloudstack-library"
 //	"encoding/json"
 	"fmt"
-//	"io/ioutil"
-//	"log"
+	"io/ioutil"
+	"log"
 	"net/url"
 	"bufio"
 	"os"
@@ -29,6 +29,11 @@ var m_host_vm_stopping map[string]int
 var m_host_vm_stopped map[string]int
 var m_host_vm_starting map[string]int
 
+var m_zone_vm_running map[string]int
+var m_zone_vm_stopping map[string]int
+var m_zone_vm_stopped map[string]int
+var m_zone_vm_starting map[string]int
+
 func get_submit_number_stat_str(host, plugin, plugin_ins, str_type, str_type_ins, value string, time_value int64) string {
 	stat := fmt.Sprintf("PUTVAL csmgr_%s/%s-%s/%s-%s %d:%s\n", host, plugin, plugin_ins, str_type, str_type_ins, time_value,
 		value)
@@ -46,6 +51,7 @@ func collect_host_status(client *cloudstack.Client) {
 	f := bufio.NewWriter(os.Stdout)
 	
 	if err != nil {
+		fmt.Errorf("Fail to exectue function listHost err is %s", err.Error())
 		return
 	}
 	
@@ -97,6 +103,7 @@ func collect_host_status(client *cloudstack.Client) {
 		
 		stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),
 			"guage", "vms_starting", strconv.Itoa(m_host_vm_starting[hosts[i].Name.String()]), curr_time)
+		
 	}
 	
 	f.Write([]byte(stat))
@@ -106,54 +113,54 @@ func collect_host_status(client *cloudstack.Client) {
 /**
  * @brief Collect the number of vm running, stop, stopping starting of zone
 */
-func collect_zone_vm_number(client *cloudstack.Client, zoneid cloudstack.ID, zonename string)(string) {
-	var result string
+func collect_zone_vm_number(client *cloudstack.Client) {
+	var stat string
 	
-	running := 0
-    stopped := 0
-    starting := 0
-    stopping := 0
-
 	param := cloudstack.NewListVirtualMachinesParameter()
-	param.ZoneId.Set(zoneid)
+	param.ListAll.Set(true)
 	vms, err := client.ListVirtualMachines(param)
+	f := bufio.NewWriter(os.Stdout)
 	
 	if err != nil {
-		return result
+		fmt.Errorf("Fail to execute function ListVirtualMachines err is %s", err.Error())
 	}
 	
 	for i := range vms {
 		stat := vms[i].State.String()
 		switch stat {
 			case "Running":
-				running++
+				m_zone_vm_running[vms[i].ZoneName.String()] += 1
 				m_host_vm_running[vms[i].HostName.String()] += 1
 				break 
 			case "Stopped":
-				stopped++
+				m_zone_vm_stopped[vms[i].ZoneName.String()] += 1
 				m_host_vm_stopped[vms[i].HostName.String()] += 1
 				break
 			case "Starting":
-				starting++
+				m_zone_vm_starting[vms[i].ZoneName.String()] += 1
 				m_host_vm_starting[vms[i].HostName.String()] += 1
 				break
 			case "Stopping":
-				stopping++
+				m_zone_vm_stopping[vms[i].ZoneName.String()] += 1
 				m_host_vm_stopping[vms[i].HostName.String()] += 1
 				break;
 				
 		}
 	}
 	
-	result += get_submit_number_stat_str(*csmgr_host, "zone", zonename, 
-			"guage", "vms_running", strconv.Itoa(running), curr_time)
-	result += get_submit_number_stat_str(*csmgr_host, "zone", zonename, 
-			"guage", "vms_stoping", strconv.Itoa(stopping), curr_time)
-	result += get_submit_number_stat_str(*csmgr_host, "zone", zonename, 
-			"guage", "vms_stopped", strconv.Itoa(stopped), curr_time)
-	result += get_submit_number_stat_str(*csmgr_host, "zone", zonename, 
-			"guage", "vms_starting", strconv.Itoa(starting), curr_time)
-	return result
+	for key, running_value := range m_zone_vm_running {
+		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
+			"guage", "user_vms_running", strconv.Itoa(running_value), curr_time)
+		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
+			"guage", "user_vms_stopped", strconv.Itoa(m_zone_vm_stopped[key]), curr_time)
+		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
+			"guage", "user_vms_startting", strconv.Itoa(m_zone_vm_starting[key]), curr_time)
+		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
+			"guage", "user_vms_stopping", strconv.Itoa(m_zone_vm_stopping[key]), curr_time)
+	}
+	
+	f.Write([]byte(stat))
+	f.Flush()
 }
 
 func collect_zone_capacity(client *cloudstack.Client) {
@@ -166,10 +173,14 @@ func collect_zone_capacity(client *cloudstack.Client) {
 	f := bufio.NewWriter(os.Stdout)
 	param := cloudstack.NewListCapacityParamete()
 	c, err = client.ListCapacity(param)
+	
+	if err != nil {
+		fmt.Errorf("Fail to exectue function ListCapacity err is %s", err.Error())
+	}
 
 	for i := range c {
 		t, err = c[i].Type.Int64()
-		if err == nil || c[i].ZoneName.IsNil() || c[i].CapacityUsed.IsNil() ||
+		if err != nil || c[i].ZoneName.IsNil() || c[i].CapacityUsed.IsNil() ||
 			c[i].CapacityTotal.IsNil() {
 			continue
 		}
@@ -226,7 +237,10 @@ func collect_zone_capacity(client *cloudstack.Client) {
 		stat += get_submit_number_stat_str(*csmgr_host, "zone", c[i].ZoneName.String(), 
 			"guage", type_used_pect_name, c[i].PercentUsed.String(), curr_time)
 		
-		stat += collect_zone_vm_number(client, c[i].ZoneId, c[i].ZoneName.String())
+		m_zone_vm_running[c[i].ZoneName.String()] = 0
+		m_zone_vm_starting[c[i].ZoneName.String()] = 0
+		m_zone_vm_stopped[c[i].ZoneName.String()] = 0
+		m_zone_vm_stopping[c[i].ZoneName.String()] = 0
 			
 	}
 	f.Write([]byte(stat))
@@ -234,8 +248,7 @@ func collect_zone_capacity(client *cloudstack.Client) {
 }
 
 func main() {
-	/*
-	log.SetOutput(ioutil.Discard)*/
+	log.SetOutput(ioutil.Discard)
 	
 	var err error
 	csmgr_host = flag.String("host", "localhost", "The hostname of cloudstack manager.")
@@ -269,7 +282,14 @@ func main() {
 	m_host_vm_stopping = make(map[string]int)
 	m_host_vm_stopped = make(map[string]int)
 	m_host_vm_starting = make(map[string]int)
+	
+	m_zone_vm_running = make(map[string]int)
+	m_zone_vm_stopping = make(map[string]int)
+	m_zone_vm_stopped = make(map[string]int)
+	m_zone_vm_starting = make(map[string]int)
+	
 	curr_time = time.Now().Unix();
 	collect_zone_capacity(client)
-	collect_host_status(client)
+	collect_zone_vm_number(client)
+	//collect_host_status(client)
 }
