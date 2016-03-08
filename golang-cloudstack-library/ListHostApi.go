@@ -10,7 +10,7 @@ type ListHostParameter struct {
 	// hypervisor type of host: XenServer,KVM,VMware,Hyperv,BareMetal,Simulator
 	Hypervisor NullString
 	// List by keyword
-	Keyword NullString 
+	Keyword NullString
 	// the name of the host
 	Name NullString
 	Page      NullNumber
@@ -32,23 +32,22 @@ type ListHostParameter struct {
 
 type Host struct {
 	ResourceBase
-	Id 	ID `json:"id"`
+	Id ID `json:"id"`
 	AverageLoad	NullNumber  `json:"averageload"`
-	Capabilities	NullNumber `json:"Capabilities"`
-	ClusterId ID 	`json:"clusterid"`
-	ClusterName NullString 	`json:"clustername"`
-	ClusterType NullString 	`json:"clustertype"`
-	CPUAllocated NullNumber 	`json:"cpuallocated"`
-	CPUNumber NullNumber 	`json:"cpunumber"`
-	CPUSockerts NullNumber 	`json:"cpusockets"`
+	Capabilities		NullString `json:"capabilities"`
+	ClusterId ID	`json:"clusterid"`
+	ClusterName NullString	`json:"clustername"`
+	ClusterType NullString	`json:"clustertype"`
+	CPUAllocated NullString `json:"cpuallocated"`
+	CPUNumber NullNumber	`json:"cpunumber"`
+	CPUSockerts NullNumber	`json:"cpusockets"`
 	CPUSpeed		NullNumber	`json:"cpuspeed"`
-	CPUUsed		NullNumber	`json:"cpuused"`
 	CPUWithoverProvisioning NullNumber `json:"cpuwithoverprovisioning"`
-	Created NullString 		`json:"created"`
-	Details NullString 		`json:"details"`
-	Disconnected NullNumber `json:"Disconnected"`
+	Created NullString	`json:"created"`
+	Details NullString	`json:"details"`
+	Disconnected NullNumber `json:"disconnected"`
 	DiskSizeAllocated NullNumber	`json:"disksizeallocated"`
-	DisksizeTotal NullNumber		`json:"disksizetotal"`
+	DisksizeTotal NullNumber	`json:"disksizetotal"`
 	Events NullString	`json:"events"`
 	Hahost NullBool	`json:"hahost"`
 	HasEnoughCapacity NullBool `json:"hasenoughcapacity"`
@@ -61,7 +60,6 @@ type Host struct {
 	Managementserverid NullString `json:"managementserverid"`
 	MemoryAllocated NullNumber `json:"memoryallocated"`
 	Memorytotal NullNumber `json:"memorytotal"`
-	MemoryUsed NullNumber `json:"memoryused"`
 	Name NullString `json:"name"`
 	NetworkKBbsRead NullNumber`json:"networkkbsread"`
 	NetworkKBbsWrite NullNumber `json:"networkkbsread"`
@@ -73,11 +71,11 @@ type Host struct {
 	ResourceState NullString `json"resourcestate"`
 	State NullString `json:"state"`
 	SuitableForMigration NullBool `json:"suitableformigration"`
-	Type 	NullString `json:"type"`
+	Type	NullString `json:"type"`
 	Version NullString `json:"version"`
-	ZoneId	ID	`json:"zoneid"`		
+	ZoneId	ID	`json:"zoneid"`
 	ZoneName NullString `json:"zonename"`
-	JobId	ID 	`json:"jobid"`
+	JobId	ID `json:"jobid"`
 	Jobstatus NullString `json:"jobstatus"`
 }
 
@@ -87,7 +85,7 @@ func NewListHostParam() (p *ListHostParameter) {
 }
 
 func (c *Client) ListHost(p *ListHostParameter) ([]*Host, error) {
-	obj, err := c.Request("listVirtualMachines", convertParamToMap(p))
+	obj, err := c.Request("listHosts", convertParamToMap(p))
 	if err != nil {
 		return nil, err
 	}
