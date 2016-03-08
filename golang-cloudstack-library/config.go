@@ -178,6 +178,11 @@ func (cmd Command) ReflectType() reflect.Type {
 			return reflect.TypeOf([]*Zone{})
 		}
 		return reflect.TypeOf(&Zone{})
+	case "host":
+		if cmd.IsList {
+			return reflect.TypeOf([]*Host{})
+		}
+		return reflect.TypeOf(&Host{})
 	default:
 		return nil
 	}
