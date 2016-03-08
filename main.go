@@ -67,42 +67,15 @@ func collect_host_status(client *cloudstack.Client) {
 			"guage", "cpu_prov_total", hosts[i].CPUWithoverProvisioning.String(), curr_time)
 		
 		stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),  
-			"guage", "cpu_used", hosts[i].CPUUsed.String(), curr_time)
-		
-		enough_cap := 0
-		if hosts[i].HasEnoughCapacity.Bool() == true {
-			enough_cap = 1
-		} 
-		
-		stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),  
-			"guage", "enough_capacity", strconv.Itoa(enough_cap), curr_time)
-		
-		stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),  
 			"guage", "memory_total", hosts[i].Memorytotal.String(), curr_time)
 			
 		stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),  
 			"guage", "memory_allocated", hosts[i].MemoryAllocated.String(), curr_time)
-		
-		stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),  
-			"guage", "memory_used", hosts[i].MemoryUsed.String(), curr_time)
-		
-		stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),  
-			"guage", "network_read_kb", hosts[i].NetworkKBbsRead.String(), curr_time)
 			
-		stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),  
-			"guage", "network_write_kb", hosts[i].NetworkKBbsWrite.String(), curr_time)
-		
-		stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),
-			"guage", "vms_running", strconv.Itoa(m_host_vm_running[hosts[i].Name.String()]), curr_time)
-			
-		stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),
-			"guage", "vms_stopped", strconv.Itoa(m_host_vm_stopped[hosts[i].Name.String()]), curr_time)
-		
-		stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),
-			"guage", "vms_stopping", strconv.Itoa(m_host_vm_stopping[hosts[i].Name.String()]), curr_time)
-		
-		stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),
-			"guage", "vms_starting", strconv.Itoa(m_host_vm_starting[hosts[i].Name.String()]), curr_time)
+		m_host_vm_running[hosts[i].Name.String()] = 0
+		m_host_vm_stopped[hosts[i].Name.String()] = 0
+		m_host_vm_stopping[hosts[i].Name.String()] = 0
+		m_host_vm_starting[hosts[i].Name.String()] = 0
 		
 	}
 	
@@ -113,7 +86,7 @@ func collect_host_status(client *cloudstack.Client) {
 /**
  * @brief Collect the number of vm running, stop, stopping starting of zone
 */
-func collect_zone_vm_number(client *cloudstack.Client) {
+func collect_vm_number(client *cloudstack.Client) {
 	var stat string
 	
 	param := cloudstack.NewListVirtualMachinesParameter()
@@ -126,8 +99,7 @@ func collect_zone_vm_number(client *cloudstack.Client) {
 	}
 	
 	for i := range vms {
-		stat := vms[i].State.String()
-		switch stat {
+		switch vms[i].State.String() {
 			case "Running":
 				m_zone_vm_running[vms[i].ZoneName.String()] += 1
 				m_host_vm_running[vms[i].HostName.String()] += 1
@@ -157,6 +129,17 @@ func collect_zone_vm_number(client *cloudstack.Client) {
 			"guage", "user_vms_startting", strconv.Itoa(m_zone_vm_starting[key]), curr_time)
 		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
 			"guage", "user_vms_stopping", strconv.Itoa(m_zone_vm_stopping[key]), curr_time)
+	}
+	
+	for key, running_value := range m_host_vm_running {
+		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
+			"guage", "user_vms_running", strconv.Itoa(running_value), curr_time)
+		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
+			"guage", "user_vms_stopped", strconv.Itoa(m_host_vm_stopped[key]), curr_time)
+		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
+			"guage", "user_vms_stopped", strconv.Itoa(m_host_vm_stopped[key]), curr_time)
+		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
+			"guage", "user_vms_stopped", strconv.Itoa(m_host_vm_stopped[key]), curr_time)
 	}
 	
 	f.Write([]byte(stat))
@@ -290,6 +273,6 @@ func main() {
 	
 	curr_time = time.Now().Unix();
 	collect_zone_capacity(client)
-	collect_zone_vm_number(client)
-	//collect_host_status(client)
+	collect_host_status(client)
+	collect_vm_number(client)
 }
