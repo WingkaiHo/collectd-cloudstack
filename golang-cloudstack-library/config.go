@@ -183,6 +183,11 @@ func (cmd Command) ReflectType() reflect.Type {
 			return reflect.TypeOf([]*Host{})
 		}
 		return reflect.TypeOf(&Host{})
+	case "router":
+		if cmd.IsList {
+			return reflect.TypeOf([]*Router{})
+		}
+		return reflect.TypeOf(&Router{})
 	default:
 		return nil
 	}
