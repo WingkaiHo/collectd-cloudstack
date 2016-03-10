@@ -28,7 +28,7 @@ type SystemVm struct {
 	Dns2	 NullString	`json:"dns2"`
 	Gateway	NullString	`json:"gateway"`
 	HostId	ID	`json:"hostid"`
-	Hostname	 NullString	`json:"hostname"`
+	HostName	 NullString	`json:"hostname"`
 	Hypervisor	NullString `json:"hypervisor"`
 	JobId	ID	`json:"jobid"`
 	JobStatus	NullString 	`json:"jobstatus"`
@@ -56,7 +56,7 @@ func NewListSystemVmsParam() (p *ListSystemVmsParam) {
 	return p
 }
 
-func (c *Client) ListSystemVMs(p *ListSystemVmsParam) ([]*SystemVm, error) {
+func (c *Client) ListSystemVms(p *ListSystemVmsParam) ([]*SystemVm, error) {
 	obj, err := c.Request("listSystemVms", convertParamToMap(p))
 	if err != nil {
 		return nil, err

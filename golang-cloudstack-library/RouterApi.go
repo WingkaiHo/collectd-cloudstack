@@ -65,7 +65,7 @@ type Router struct {
 	Version	NullString	`json:"version"`
 	VpcId	ID	`json:"vpcid"`
 	ZoneId	ID	`json:"zoneid"`
-	Zonename NullString `json:"zonename"`
+	ZoneName NullString `json:"zonename"`
 	Nics []Nic	`json:"nic"`
 }
 
