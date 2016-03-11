@@ -93,7 +93,7 @@ func collect_sys_vm_number(client *cloudstack.Client) {
 				continue
 			}
 			stat += get_submit_number_stat_str(*csmgr_host, "systemvm", routers[i].Name.String(),  
-					"guage", "status", vmstat, curr_time)
+					"gauge", "status", vmstat, curr_time)
 		}
 	} else {
 		fmt.Errorf("Fail to execute function listRouters err is %s\n", routers_err.Error())
@@ -109,29 +109,29 @@ func collect_sys_vm_number(client *cloudstack.Client) {
 				m_zone_sys_vm_running[sysvms[i].ZoneName.String()] += 1
 				m_host_sys_vm_running[sysvms[i].HostName.String()] += 1
 				stat += get_submit_number_stat_str(*csmgr_host, "systemvm", sysvms[i].Name.String(),  
-					"guage", "status", "3", curr_time)
+					"gauge", "status", "3", curr_time)
 				break
 			case "Starting":
 				m_zone_sys_vm_starting[sysvms[i].ZoneName.String()] += 1
 				m_host_sys_vm_starting[sysvms[i].HostName.String()] += 1
 				stat += get_submit_number_stat_str(*csmgr_host, "systemvm", sysvms[i].Name.String(),  
-					"guage", "status", "2", curr_time)
+					"gauge", "status", "2", curr_time)
 				break 
 			case "Stopping":
 				m_zone_sys_vm_stopping[sysvms[i].ZoneName.String()] += 1
 				m_host_sys_vm_stopping[sysvms[i].HostName.String()] += 1
 				stat += get_submit_number_stat_str(*csmgr_host, "systemvm", sysvms[i].Name.String(),  
-					"guage", "status", "1", curr_time)
+					"gauge", "status", "1", curr_time)
 				break
 			case "Stopped":
 				m_zone_sys_vm_stopped[sysvms[i].ZoneName.String()] += 1
 				m_host_sys_vm_stopped[sysvms[i].HostName.String()] += 1
 				stat += get_submit_number_stat_str(*csmgr_host, "systemvm", sysvms[i].Name.String(),  
-					"guage", "status", "0", curr_time)
+					"gauge", "status", "0", curr_time)
 				break
 			case "Error":
 				stat += get_submit_number_stat_str(*csmgr_host, "systemvm", sysvms[i].Name.String(),  
-					"guage", "status", "-1", curr_time)
+					"gauge", "status", "-1", curr_time)
 				break;
 			}
 		}
@@ -142,24 +142,24 @@ func collect_sys_vm_number(client *cloudstack.Client) {
 	
 	for key, running_value := range m_zone_sys_vm_running {
 		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
-			"guage", "user_sys_vms_running", strconv.Itoa(running_value), curr_time)
+			"gauge", "user_sys_vms_running", strconv.Itoa(running_value), curr_time)
 		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
-			"guage", "user_sys_vms_stopped", strconv.Itoa(m_zone_sys_vm_stopped[key]), curr_time)
+			"gauge", "user_sys_vms_stopped", strconv.Itoa(m_zone_sys_vm_stopped[key]), curr_time)
 		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
-			"guage", "user_sys_vms_startting", strconv.Itoa(m_zone_sys_vm_starting[key]), curr_time)
+			"gauge", "user_sys_vms_startting", strconv.Itoa(m_zone_sys_vm_starting[key]), curr_time)
 		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
-			"guage", "user_sys_vms_stopping", strconv.Itoa(m_zone_sys_vm_stopping[key]), curr_time)
+			"gauge", "user_sys_vms_stopping", strconv.Itoa(m_zone_sys_vm_stopping[key]), curr_time)
 	}
 	
 	for key, running_value := range m_host_sys_vm_running {
 		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
-			"guage", "user_sys_vms_running", strconv.Itoa(running_value), curr_time)
+			"gauge", "user_sys_vms_running", strconv.Itoa(running_value), curr_time)
 		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
-			"guage", "user_sys_vms_stopped", strconv.Itoa(m_host_sys_vm_stopped[key]), curr_time)
+			"gauge", "user_sys_vms_stopped", strconv.Itoa(m_host_sys_vm_stopped[key]), curr_time)
 		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
-			"guage", "user_sys_vms_startting", strconv.Itoa(m_host_sys_vm_starting[key]), curr_time)
+			"gauge", "user_sys_vms_startting", strconv.Itoa(m_host_sys_vm_starting[key]), curr_time)
 		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
-			"guage", "user_sys_vms_stopping", strconv.Itoa(m_host_sys_vm_stopping[key]), curr_time)
+			"gauge", "user_sys_vms_stopping", strconv.Itoa(m_host_sys_vm_stopping[key]), curr_time)
 	}
 	
 	f.Write([]byte(stat))
@@ -193,17 +193,17 @@ func collect_host_status(client *cloudstack.Client) {
 		if parse_err == nil {
 			cpu_allocated_percent /= 100.0
 			stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),  
-				"guage", "cpu_allocated_precent", hosts[i].CPUAllocated.String(), curr_time)
+				"gauge", "cpu_allocated_precent", hosts[i].CPUAllocated.String(), curr_time)
 		}
 			
 		stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),  
-			"guage", "cpu_prov_total", hosts[i].CPUWithoverProvisioning.String(), curr_time)
+			"gauge", "cpu_prov_total", hosts[i].CPUWithoverProvisioning.String(), curr_time)
 		
 		stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),  
-			"guage", "memory_total", hosts[i].Memorytotal.String(), curr_time)
+			"gauge", "memory_total", hosts[i].Memorytotal.String(), curr_time)
 			
 		stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),  
-			"guage", "memory_allocated", hosts[i].MemoryAllocated.String(), curr_time)
+			"gauge", "memory_allocated", hosts[i].MemoryAllocated.String(), curr_time)
 			
 		
 		if hosts[i].Hahost.Bool() == true {
@@ -213,7 +213,7 @@ func collect_host_status(client *cloudstack.Client) {
 		}
 		
 		stat += get_submit_number_stat_str(*csmgr_host, "host", hosts[i].Name.String(),  
-			"guage", "hahost", strconv.Itoa(isha), curr_time)
+			"gauge", "hahost", strconv.Itoa(isha), curr_time)
 			
 		m_host_vm_running[hosts[i].Name.String()] = 0
 		m_host_vm_stopped[hosts[i].Name.String()] = 0
@@ -270,24 +270,24 @@ func collect_user_vm_number(client *cloudstack.Client) {
 	
 	for key, running_value := range m_zone_vm_running {
 		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
-			"guage", "user_vms_running", strconv.Itoa(running_value), curr_time)
+			"gauge", "user_vms_running", strconv.Itoa(running_value), curr_time)
 		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
-			"guage", "user_vms_stopped", strconv.Itoa(m_zone_vm_stopped[key]), curr_time)
+			"gauge", "user_vms_stopped", strconv.Itoa(m_zone_vm_stopped[key]), curr_time)
 		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
-			"guage", "user_vms_startting", strconv.Itoa(m_zone_vm_starting[key]), curr_time)
+			"gauge", "user_vms_startting", strconv.Itoa(m_zone_vm_starting[key]), curr_time)
 		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
-			"guage", "user_vms_stopping", strconv.Itoa(m_zone_vm_stopping[key]), curr_time)
+			"gauge", "user_vms_stopping", strconv.Itoa(m_zone_vm_stopping[key]), curr_time)
 	}
 	
 	for key, running_value := range m_host_vm_running {
 		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
-			"guage", "user_vms_running", strconv.Itoa(running_value), curr_time)
+			"gauge", "user_vms_running", strconv.Itoa(running_value), curr_time)
 		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
-			"guage", "user_vms_stopped", strconv.Itoa(m_host_vm_stopped[key]), curr_time)
+			"gauge", "user_vms_stopped", strconv.Itoa(m_host_vm_stopped[key]), curr_time)
 		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
-			"guage", "user_vms_stopped", strconv.Itoa(m_host_vm_stopped[key]), curr_time)
+			"gauge", "user_vms_stopped", strconv.Itoa(m_host_vm_stopped[key]), curr_time)
 		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
-			"guage", "user_vms_stopped", strconv.Itoa(m_host_vm_stopped[key]), curr_time)
+			"gauge", "user_vms_stopped", strconv.Itoa(m_host_vm_stopped[key]), curr_time)
 	}
 	
 	f.Write([]byte(stat))
@@ -298,7 +298,7 @@ func collect_zone_capacity(client *cloudstack.Client) {
 	var stat string
 	var t int64
 	var err error
-	var type_total_name, type_used_name, type_used_pect_name string
+	var type_total_name, type_used_name string
 	var c []*cloudstack.Capacity
 	
 	f := bufio.NewWriter(os.Stdout)
@@ -320,53 +320,42 @@ func collect_zone_capacity(client *cloudstack.Client) {
 		case 0:
 			type_total_name = "mem_total"
 			type_used_name = "mem_used"
-			type_used_pect_name = "mem_used_percent"
 			break
 		case 1:
 			type_total_name = "cpu_total"
 			type_used_name = "cpu_used"
-			type_used_pect_name = "cpu_used_percent"
 			break
 		case 2:
 			type_total_name = "primary_storage_total"
 			type_used_name = "primary_storage_used"
-			type_used_pect_name = "primary_storage_percent"
 			break
 		case 4:
 			type_total_name = "virtual_network_public_ip_total"
 			type_used_name = "virtual_network_public_ip_used"
-			type_used_pect_name = "virtual_network_public_ip_used_percent"
 			break
 		case 5:
 			type_total_name = "private_ip_total"
 			type_used_name = "private_ip_used"
-			type_used_pect_name = "private_ip_used_percent"
 			break
 		case 6:
 			type_total_name = "privat_total"
 			type_used_name = "private_ip_used"
-			type_used_pect_name = "private_ip_used_percent"
 		case 7:
 			type_total_name = "vlan_total"
 			type_used_name = "vlan_used"
-			type_used_pect_name = "vlan_used_percent"
 			break;
 		case 8:
 			type_total_name = "direct_attached_public_ip_total"
 			type_used_name = "direct_attached_public_ip_used"
-			type_used_pect_name = "direct_attached_public_ip_used_percent"
 		default:
 			continue
 		}
 		
 		stat += get_submit_number_stat_str(*csmgr_host, "zone", c[i].ZoneName.String(), 
-			"guage", type_total_name, c[i].CapacityTotal.String(), curr_time)
+			"gauge", type_total_name, c[i].CapacityTotal.String(), curr_time)
 		
 		stat += get_submit_number_stat_str(*csmgr_host, "zone", c[i].ZoneName.String(), 
-			"guage", type_used_name, c[i].CapacityUsed.String(), curr_time)
-			
-		stat += get_submit_number_stat_str(*csmgr_host, "zone", c[i].ZoneName.String(), 
-			"guage", type_used_pect_name, c[i].PercentUsed.String(), curr_time)
+			"gauge", type_used_name, c[i].CapacityUsed.String(), curr_time)
 		
 		m_zone_vm_running[c[i].ZoneName.String()] = 0
 		m_zone_vm_starting[c[i].ZoneName.String()] = 0
@@ -385,12 +374,15 @@ func collect_zone_capacity(client *cloudstack.Client) {
 
 func main() {
 	log.SetOutput(ioutil.Discard)
-	
 	var err error
+	var interval, debug int
 	csmgr_host = flag.String("host", "localhost", "The hostname of cloudstack manager.")
 	api_key = flag.String("apikey", "", "API key from an account on the root level.")
 	secret_key = flag.String("secret", "", "Associated API Secret from the account")
 	mgr_port = flag.Int("port", 8080, "The port of cloudstack manager of access. Default is 8080")
+	flag.IntVar(&interval, "interval", 300, "The scan interval of cloudstack resource")
+	flag.IntVar(&debug, "debug", 0, "If debug mode running.")
+	
 	user_name = "admin"
 	password = "password"
 	
@@ -434,8 +426,23 @@ func main() {
 	m_zone_sys_vm_stopped = make(map[string]int)
 	m_zone_sys_vm_starting = make(map[string]int)
 	
-	curr_time = time.Now().Unix();
-	collect_zone_capacity(client)
-	collect_host_status(client)
-	collect_user_vm_number(client)
+	
+	ticker := time.NewTicker(time.Second * time.Duration(interval))
+	go func() {
+		for t := range ticker.C {
+			if debug == 1 {
+				fmt.Println("DEBUG", time.Now(), " - ", t)
+			}
+			
+			curr_time = time.Now().Unix();
+			collect_zone_capacity(client)
+			collect_host_status(client)
+			collect_user_vm_number(client)
+			collect_sys_vm_number(client)
+		}
+	}()
+	// run for a year - as collectd will restart it
+	time.Sleep(time.Second * 86400 * 365 * 100)
+	ticker.Stop()
+	fmt.Println("Ticker stopped")
 }
