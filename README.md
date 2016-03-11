@@ -38,11 +38,10 @@
    </Plugin>
 
 三. cloudstack资源监控
-	$cloudstack_mgr_host: cloudstack manager 机器hostname
-	$zone_name: 你所查询zone名称
+$cloudstack_mgr_host: cloudstack manager 机器hostname
+$zone_name: 你所查询zone名称
 
 1. Zone 资源监控数据库路径
-
 1) CPU资源频率总量，分配虚拟机CPU频率
 	collectd.csmgr-$cloudstack_mgr_host.zone-$zone_name.cpu_total [整个zone所有host机器CPU总量,单位是HZ]
 	collectd.csmgr-$cloudstack_mgr_host.zone-$zone_name.cpu_used  [整个zone已经分配CPU频率数,单位HZ]	
