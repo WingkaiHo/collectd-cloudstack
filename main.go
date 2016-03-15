@@ -24,6 +24,8 @@ var curr_time int64
 var user_name string
 var password string
 var client *cloudstack.Client
+var interval, debug int
+var inited int
 
 // statistics the user vm number in host or zone
 var m_host_vm_running map[string]int
@@ -47,10 +49,60 @@ var m_zone_sys_vm_stopping map[string]int
 var m_zone_sys_vm_stopped map[string]int
 var m_zone_sys_vm_starting map[string]int
 
+var m_host_user_vm_ifread_curr	map[string]int64
+var m_host_user_vm_ifread_last	map[string]int64
+
+var m_host_user_vm_ifwrite_curr	map[string]int64
+var m_host_user_vm_ifwrite_last	map[string]int64	
+
+var m_host_user_vm_diskread_curr map[string]int64
+var m_host_user_vm_diskread_last map[string]int64
+
+var m_host_user_vm_diskwrite_curr map[string]int64
+var m_host_user_vm_diskwrite_last map[string]int64
+
+var m_host_user_vm_diskioread_curr map[string]int64
+var m_host_user_vm_diskioread_last map[string]int64
+
+var m_host_user_vm_diskiowrite_curr map[string]int64
+var m_host_user_vm_diskiowrite_last map[string]int64
+
+var m_zone_user_vm_ifread_curr map[string]int64
+var m_zone_user_vm_ifread_last map[string]int64
+
+var m_zone_user_vm_ifwrite_curr	map[string]int64
+var m_zone_user_vm_ifwrite_last	map[string]int64	
+
+var m_zone_user_vm_diskread_curr map[string]int64
+var m_zone_user_vm_diskread_last map[string]int64
+
+var m_zone_user_vm_diskwrite_curr map[string]int64
+var m_zone_user_vm_diskwrite_last map[string]int64
+
+var m_zone_user_vm_diskioread_curr map[string]int64
+var m_zone_user_vm_diskioread_last map[string]int64
+
+var m_zone_user_vm_diskiowrite_curr map[string]int64
+var m_zone_user_vm_diskiowrite_last map[string]int64
+
 func get_submit_number_stat_str(host, plugin, plugin_ins, str_type, str_type_ins, value string, time_value int64) string {
 	stat := fmt.Sprintf("PUTVAL csmgr_%s/%s-%s/%s-%s %d:%s\n", host, plugin, plugin_ins, str_type, str_type_ins, time_value,
 		value)
 	return stat
+}
+
+func extrace_precent_value(v string)(float64) {
+	num_end := strings.Index(v, "%")
+	if num_end > 0  {
+		v = string(v[0:num_end-1])
+	}
+	
+	result, err:= strconv.ParseFloat(v, 64)
+	if err != nil {
+		return 0.0
+	}
+	
+	return result
 }
 
 func collect_sys_vm_number(client *cloudstack.Client) {
@@ -236,6 +288,11 @@ func collect_host_status(client *cloudstack.Client) {
 */
 func collect_user_vm_number(client *cloudstack.Client) {
 	var stat string
+	var ifread, ifwrite int64
+	var diskread, diskwrite int64 
+	var diskioread, diskiowrite int64
+	//var cpuused float64
+	var err error
 	
 	param := cloudstack.NewListVirtualMachinesParameter()
 	param.ListAll.Set(true)
@@ -244,6 +301,7 @@ func collect_user_vm_number(client *cloudstack.Client) {
 	
 	if err != nil {
 		fmt.Errorf("Fail to execute function ListVirtualMachines err is %s\n", err.Error())
+		return
 	}
 	
 	for i := range vms {
@@ -251,6 +309,9 @@ func collect_user_vm_number(client *cloudstack.Client) {
 			case "Running":
 				m_zone_vm_running[vms[i].ZoneName.String()] += 1
 				m_host_vm_running[vms[i].HostName.String()] += 1
+				/*if vms[i].CpuUsed.IsNil() == false {
+					cpuused += extrace_precent_value(vms[i].CpuUsed.String())
+				}*/
 				break 
 			case "Stopped":
 				m_zone_vm_stopped[vms[i].ZoneName.String()] += 1
@@ -264,7 +325,46 @@ func collect_user_vm_number(client *cloudstack.Client) {
 				m_zone_vm_stopping[vms[i].ZoneName.String()] += 1
 				m_host_vm_stopping[vms[i].HostName.String()] += 1
 				break;
-				
+		}
+		
+		ifread, err = vms[i].NetworkKbsRead.Int64()
+		if err == nil {
+			ifread *= 1024
+			m_host_user_vm_ifread_curr[vms[i].HostName.String()] += ifread
+			m_zone_user_vm_ifread_curr[vms[i].ZoneName.String()] += ifread
+		}
+		
+		ifwrite, err = vms[i].NetworkKbsWrite.Int64()
+		if err == nil {
+			ifwrite *= 1024
+			m_host_user_vm_ifwrite_curr[vms[i].HostName.String()] += ifwrite
+			m_zone_user_vm_ifwrite_curr[vms[i].ZoneName.String()] += ifwrite
+		}
+		
+		diskread, err = vms[i].DiskKbsRead.Int64()
+		if err == nil {
+			diskread *= 1024
+			m_host_user_vm_diskread_curr[vms[i].HostName.String()] += diskread
+			m_zone_user_vm_diskread_curr[vms[i].ZoneName.String()] += diskread
+		}
+		
+		diskwrite, err = vms[i].DiskKbsWrite.Int64()
+		if err == nil {
+			diskread *= 1024
+			m_host_user_vm_diskwrite_curr[vms[i].HostName.String()] += diskwrite
+			m_zone_user_vm_diskwrite_curr[vms[i].ZoneName.String()] += diskwrite
+		}
+		
+		diskioread, err = vms[i].DiskIoRead.Int64()
+		if err == nil {
+			m_host_user_vm_diskioread_curr[vms[i].HostName.String()] += diskioread
+			m_zone_user_vm_diskioread_curr[vms[i].ZoneName.String()] += diskioread
+		}
+		
+		diskiowrite, err = vms[i].DiskIoWrite.Int64()
+		if err == nil {
+			m_host_user_vm_diskiowrite_curr[vms[i].HostName.String()] += diskiowrite
+			m_zone_user_vm_diskiowrite_curr[vms[i].ZoneName.String()] += diskiowrite
 		}
 	}
 	
@@ -277,6 +377,59 @@ func collect_user_vm_number(client *cloudstack.Client) {
 			"gauge", "user_vms_startting", strconv.Itoa(m_zone_vm_starting[key]), curr_time)
 		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
 			"gauge", "user_vms_stopping", strconv.Itoa(m_zone_vm_stopping[key]), curr_time)
+		
+		if inited == 0 {
+			continue
+		}
+		
+		if m_zone_user_vm_ifread_curr[key] >=  m_zone_user_vm_ifread_last[key] {
+			ifread = m_zone_user_vm_ifread_curr[key] - m_zone_user_vm_ifread_last[key]
+		} else {
+			ifread = 0
+		}
+		
+		if m_zone_user_vm_ifwrite_curr[key] >=  m_zone_user_vm_ifwrite_last[key] {
+			ifwrite = m_zone_user_vm_ifwrite_curr[key] - m_zone_user_vm_ifwrite_last[key]
+		} else {
+			ifwrite = 0
+		}
+		
+		if m_zone_user_vm_diskread_curr[key] >= m_zone_user_vm_diskread_last[key] {
+			diskread = m_zone_user_vm_diskread_curr[key] - m_zone_user_vm_diskread_last[key]
+		} else {
+			diskread = 0
+		}
+		
+		if m_zone_user_vm_diskwrite_curr[key] >= m_zone_user_vm_diskwrite_last[key] {
+			diskwrite = m_zone_user_vm_diskwrite_curr[key] - m_zone_user_vm_diskwrite_last[key]
+		} else {
+			diskwrite = 0
+		}
+		
+		if m_zone_user_vm_diskioread_curr[key] >= m_zone_user_vm_diskioread_last[key] {
+			diskioread = m_zone_user_vm_diskioread_curr[key] - m_zone_user_vm_diskioread_last[key]
+		} else {
+			diskioread = 0
+		}
+		
+		if m_zone_user_vm_diskiowrite_curr[key] >= m_zone_user_vm_diskiowrite_last[key] {
+			diskiowrite = m_zone_user_vm_diskiowrite_curr[key] - m_zone_user_vm_diskiowrite_last[key]
+		} else {
+			diskiowrite = 0
+		}
+		
+		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
+			"gauge", "user_vms_network_rx", strconv.FormatInt(ifread, 10), curr_time)
+		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
+			"gauge", "user_vms_network_tx", strconv.FormatInt(ifwrite, 10), curr_time)
+		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
+			"gauge", "user_vms_disk_read", strconv.FormatInt(diskread, 10), curr_time)
+		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
+			"gauge", "user_vms_disk_write", strconv.FormatInt(diskwrite, 10), curr_time)
+		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
+			"gauge", "user_vms_disk_ioread", strconv.FormatInt(diskioread, 10), curr_time)
+		stat += get_submit_number_stat_str(*csmgr_host, "zone", key, 
+			"gauge", "user_vms_disk_iowrite", strconv.FormatInt(diskiowrite, 10), curr_time)
 	}
 	
 	for key, running_value := range m_host_vm_running {
@@ -288,6 +441,59 @@ func collect_user_vm_number(client *cloudstack.Client) {
 			"gauge", "user_vms_stopped", strconv.Itoa(m_host_vm_stopped[key]), curr_time)
 		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
 			"gauge", "user_vms_stopped", strconv.Itoa(m_host_vm_stopped[key]), curr_time)
+			
+		if inited == 0 {
+			continue
+		}
+		
+		if m_host_user_vm_ifread_curr[key] >=  m_host_user_vm_ifread_last[key] {
+			ifread = m_host_user_vm_ifread_curr[key] - m_host_user_vm_ifread_last[key]
+		} else {
+			ifread = 0
+		}
+		
+		if m_host_user_vm_ifwrite_curr[key] >=  m_host_user_vm_ifwrite_last[key] {
+			ifwrite = m_host_user_vm_ifwrite_curr[key] - m_host_user_vm_ifwrite_last[key]
+		} else {
+			ifwrite = 0
+		}
+		
+		if m_host_user_vm_diskread_curr[key] >= m_host_user_vm_diskread_last[key] {
+			diskread = m_host_user_vm_diskread_curr[key] - m_host_user_vm_diskread_last[key]
+		} else {
+			diskread = 0
+		}
+		
+		if m_host_user_vm_diskwrite_curr[key] >= m_host_user_vm_diskwrite_last[key] {
+			diskwrite = m_host_user_vm_diskwrite_curr[key] - m_host_user_vm_diskwrite_last[key]
+		} else {
+			diskwrite = 0
+		}
+		
+		if m_host_user_vm_diskioread_curr[key] >= m_host_user_vm_diskioread_last[key] {
+			diskioread = m_host_user_vm_diskioread_curr[key] - m_host_user_vm_diskioread_last[key]
+		} else {
+			diskioread = 0
+		}
+		
+		if m_host_user_vm_diskiowrite_curr[key] >= m_host_user_vm_diskiowrite_last[key] {
+			diskiowrite = m_host_user_vm_diskiowrite_curr[key] - m_host_user_vm_diskiowrite_last[key]
+		} else {
+			diskiowrite = 0
+		}
+		
+		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
+			"gauge", "user_vms_network_rx", strconv.FormatInt(ifread, 10), curr_time)
+		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
+			"gauge", "user_vms_network_tx", strconv.FormatInt(ifwrite, 10), curr_time)
+		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
+			"gauge", "user_vms_disk_read", strconv.FormatInt(diskread, 10), curr_time)
+		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
+			"gauge", "user_vms_disk_write", strconv.FormatInt(diskwrite, 10), curr_time)
+		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
+			"gauge", "user_vms_disk_ioread", strconv.FormatInt(diskioread, 10), curr_time)
+		stat += get_submit_number_stat_str(*csmgr_host, "host", key, 
+			"gauge", "user_vms_disk_iowrite", strconv.FormatInt(diskiowrite, 10), curr_time)
 	}
 	
 	f.Write([]byte(stat))
@@ -307,6 +513,7 @@ func collect_zone_capacity(client *cloudstack.Client) {
 	
 	if err != nil {
 		fmt.Errorf("Fail to exectue function ListCapacity err is %s\n", err.Error())
+		return
 	}
 
 	for i := range c {
@@ -366,6 +573,24 @@ func collect_zone_capacity(client *cloudstack.Client) {
 		m_zone_sys_vm_starting[c[i].ZoneName.String()] = 0
 		m_zone_sys_vm_stopped[c[i].ZoneName.String()] = 0
 		m_zone_sys_vm_stopping[c[i].ZoneName.String()] = 0
+		
+		m_host_user_vm_ifread_last[c[i].ZoneName.String()] = m_host_user_vm_ifread_curr[c[i].ZoneName.String()] 
+		m_host_user_vm_ifread_curr[c[i].ZoneName.String()] = 0
+
+		m_host_user_vm_ifwrite_last[c[i].ZoneName.String()] = m_host_user_vm_ifwrite_curr[c[i].ZoneName.String()]
+		m_host_user_vm_ifwrite_curr[c[i].ZoneName.String()] = 0
+
+		m_host_user_vm_diskread_last[c[i].ZoneName.String()] = m_host_user_vm_diskread_curr[c[i].ZoneName.String()] 
+		m_host_user_vm_diskread_curr[c[i].ZoneName.String()] = 0
+		
+		m_host_user_vm_diskwrite_last[c[i].ZoneName.String()] = m_host_user_vm_diskwrite_curr[c[i].ZoneName.String()]
+		m_host_user_vm_diskwrite_curr[c[i].ZoneName.String()] = 0
+
+		m_host_user_vm_diskioread_last[c[i].ZoneName.String()] = m_host_user_vm_diskioread_curr[c[i].ZoneName.String()] 
+		m_host_user_vm_diskioread_curr[c[i].ZoneName.String()] = 0 
+
+		m_host_user_vm_diskiowrite_last[c[i].ZoneName.String()] = m_host_user_vm_diskiowrite_curr[c[i].ZoneName.String()]
+		m_host_user_vm_diskiowrite_curr[c[i].ZoneName.String()] = 0
 			
 	}
 	f.Write([]byte(stat))
@@ -375,7 +600,6 @@ func collect_zone_capacity(client *cloudstack.Client) {
 func main() {
 	log.SetOutput(ioutil.Discard)
 	var err error
-	var interval, debug int
 	csmgr_host = flag.String("host", "localhost", "The hostname of cloudstack manager.")
 	api_key = flag.String("apikey", "", "API key from an account on the root level.")
 	secret_key = flag.String("secret", "", "Associated API Secret from the account")
@@ -388,22 +612,31 @@ func main() {
 	
 	flag.Parse()
 	
+	if interval < 20 {
+		fmt.Errorf("The scan interval must more then 20 second \n")
+		return
+	}
+	
 	if *api_key == "" {
 		fmt.Errorf("Please use -apikey to set api key from an account on the root level.\n")
+		return
 	}
 	
 	if *secret_key == "" {
 		fmt.Errorf("Please use -secret to set secretkey to associated API Secret from the account\n")
+		return
 	}
 	
 	endpoint, err := url.Parse("http://"+*csmgr_host+":"+strconv.Itoa(*mgr_port)+"/client/api")
 	if err != nil {
 		fmt.Errorf("Fail to parse the url.\n")
+		return
 	}
 	
 	client, err = cloudstack.NewClient(endpoint, *api_key, *secret_key, user_name, password)
 	if err != nil {
 		fmt.Errorf("Fail to create the cloudstack client instance.\n")
+		return
 	}
 	
 	m_host_vm_running = make(map[string]int)
@@ -427,7 +660,44 @@ func main() {
 	m_zone_sys_vm_starting = make(map[string]int)
 	
 	
+	m_host_user_vm_ifread_curr = make(map[string]int64)
+	m_host_user_vm_ifread_last = make(map[string]int64)
+
+	m_host_user_vm_ifwrite_curr = make(map[string]int64)
+	m_host_user_vm_ifwrite_last = make(map[string]int64)
+
+	m_host_user_vm_diskread_curr = make(map[string]int64)
+	m_host_user_vm_diskread_last = make(map[string]int64)
+
+	m_host_user_vm_diskwrite_curr = make(map[string]int64)
+	m_host_user_vm_diskwrite_last = make(map[string]int64)
+
+	m_host_user_vm_diskioread_curr = make(map[string]int64)
+	m_host_user_vm_diskioread_last = make(map[string]int64)
+
+	m_host_user_vm_diskiowrite_curr = make(map[string]int64)
+	m_host_user_vm_diskiowrite_last = make(map[string]int64)
+		
+	m_zone_user_vm_ifread_curr = make(map[string]int64)
+	m_zone_user_vm_ifread_last = make(map[string]int64)
+
+	m_zone_user_vm_ifwrite_curr = make(map[string]int64)
+	m_zone_user_vm_ifwrite_last = make(map[string]int64)
+
+	m_zone_user_vm_diskread_curr = make(map[string]int64)
+	m_zone_user_vm_diskread_last = make(map[string]int64)
+
+	m_zone_user_vm_diskwrite_curr = make(map[string]int64)
+	m_zone_user_vm_diskwrite_last = make(map[string]int64)
+
+	m_zone_user_vm_diskioread_curr = make(map[string]int64)
+	m_zone_user_vm_diskioread_last = make(map[string]int64)
+
+	m_zone_user_vm_diskiowrite_curr = make(map[string]int64)
+	m_zone_user_vm_diskiowrite_last = make(map[string]int64)
+	
 	ticker := time.NewTicker(time.Second * time.Duration(interval))
+	inited = 0
 	go func() {
 		for t := range ticker.C {
 			if debug == 1 {
@@ -439,6 +709,7 @@ func main() {
 			collect_host_status(client)
 			collect_user_vm_number(client)
 			collect_sys_vm_number(client)
+			inited = 1
 		}
 	}()
 	// run for a year - as collectd will restart it
